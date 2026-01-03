@@ -6,6 +6,7 @@ import PersonalMsg from "../components/personal/PersonalMsg";
 import About from "../components/about/About";
 import Gallery from "../components/gallery/Gallery";
 import ForYour16 from "@/components/for-your-16/ForYour16";
+import Photobooth from "../components/photobooth/Photobooth";
 
 export default function LandingPage() {
   return (
@@ -34,6 +35,9 @@ export default function LandingPage() {
       </div>
       <div className="mt-8 sm:mt-12 md:mt-16 pb-0 sm:pb-0 md:pb-0">
         <ForYour16 />
+      </div>
+      <div className="mt-8 sm:mt-12 md:mt-16 pb-10 sm:pb-14 md:pb-20">
+        <Photobooth />
       </div>
     </main>
   );
