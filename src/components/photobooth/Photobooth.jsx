@@ -125,13 +125,18 @@ export default function Photobooth() {
 
               <div className="mt-6 flex flex-col gap-3">
                 {permission !== "granted" && (
-                  <button
-                    type="button"
-                    onClick={requestCamera}
-                    className="rounded-md bg-textDark px-4 py-3 text-base text-white"
-                  >
-                    Minta Akses Kamera
-                  </button>
+                  <div className="rounded-2xl border border-subtle bg-bgSurface p-4">
+                    <p className="text-caption text-textSecondary">
+                      Klik tombol di bawah ini untuk memunculkan izin kamera.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={requestCamera}
+                      className="mt-3 w-full rounded-lg bg-textDark px-4 py-4 text-base font-semibold text-white"
+                    >
+                      AKSES KAMERA
+                    </button>
+                  </div>
                 )}
                 <button
                   type="button"
