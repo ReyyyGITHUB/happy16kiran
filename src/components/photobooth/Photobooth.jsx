@@ -36,6 +36,11 @@ export default function Photobooth() {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Some mobile browsers need an explicit play call after user gesture
+        const playPromise = videoRef.current.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {});
+        }
       }
       setPermission("granted");
     } catch (err) {
@@ -86,7 +91,7 @@ export default function Photobooth() {
               />
               {permission !== "granted" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
-                  Camera off
+                  Camera off (tap tombol untuk izin)
                 </div>
               )}
             </div>
@@ -119,13 +124,15 @@ export default function Photobooth() {
               )}
 
               <div className="mt-6 flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={requestCamera}
-                  className="rounded-md bg-textDark px-4 py-3 text-base text-white"
-                >
-                  Minta Akses Kamera
-                </button>
+                {permission !== "granted" && (
+                  <button
+                    type="button"
+                    onClick={requestCamera}
+                    className="rounded-md bg-textDark px-4 py-3 text-base text-white"
+                  >
+                    Minta Akses Kamera
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={takePhoto}
