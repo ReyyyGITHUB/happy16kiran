@@ -127,15 +127,18 @@ export default function Photobooth() {
                 {permission !== "granted" && (
                   <div className="rounded-2xl border border-subtle bg-bgSurface p-4">
                     <p className="text-caption text-textSecondary">
-                      Klik tombol di bawah ini untuk memunculkan izin kamera.
+                      Desktop Chrome: klik tombol besar ini untuk memunculkan izin kamera.
                     </p>
                     <button
                       type="button"
                       onClick={requestCamera}
-                      className="mt-3 w-full rounded-lg bg-textDark px-4 py-4 text-base font-semibold text-white"
+                      className="mt-4 w-full rounded-xl bg-textDark px-6 py-5 text-lg font-bold uppercase tracking-wide text-white shadow-lg"
                     >
-                      AKSES KAMERA
+                      AKTIFKAN KAMERA
                     </button>
+                    <p className="mt-3 text-caption text-textMuted">
+                      Jika tetap tidak muncul, cek ikon kamera di address bar atau Site settings.
+                    </p>
                   </div>
                 )}
                 <button
