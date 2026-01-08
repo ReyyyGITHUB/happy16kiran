@@ -114,10 +114,25 @@ export default function Photobooth() {
     setFlash(false);
   }, []);
 
-  const openCamera = useCallback(() => {
+  const openCamera = useCallback(async () => {
     setError(null);
-    setState("camera");
-    // react-webcam akan minta permission otomatis ketika mounted
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("Browser/device ini tidak support akses kamera (getUserMedia). Coba Chrome/Safari terbaru.");
+      return;
+    }
+
+    try {
+      // Trigger permission dialog explicitly on user gesture (mobile-friendly)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false,
+      });
+      stream.getTracks().forEach((track) => track.stop());
+      setState("camera");
+    } catch (err) {
+      setError("Izin kamera ditolak/blocked. Cek permission browser + OS, lalu reload.");
+    }
   }, []);
 
   const closeCamera = useCallback(() => {
