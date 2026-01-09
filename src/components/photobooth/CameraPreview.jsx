@@ -6,9 +6,11 @@ export default function CameraPreview({
   permission,
   countdown,
   aspectRatio,
+  containerRef,
 }) {
   return (
     <div
+      ref={containerRef}
       className="relative w-full overflow-hidden rounded-[28px] border border-pink-100 bg-white shadow-[0_20px_60px_rgba(255,192,203,0.35)]"
       style={aspectRatio ? { aspectRatio } : undefined}
     >

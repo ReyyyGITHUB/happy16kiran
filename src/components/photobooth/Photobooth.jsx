@@ -51,6 +51,7 @@ export default function Photobooth() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
+  const previewContainerRef = useRef(null);
 
   const [permission, setPermission] = useState("unknown"); // unknown | granted | denied
   const [error, setError] = useState("");
@@ -202,6 +203,14 @@ export default function Photobooth() {
     setStage("capture");
   };
 
+  const getPreviewAspect = () => {
+    const container = previewContainerRef.current;
+    if (!container) return SLOT_ASPECT;
+    const { width, height } = container.getBoundingClientRect();
+    if (!width || !height) return SLOT_ASPECT;
+    return width / height;
+  };
+
   const takePhoto = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -221,7 +230,8 @@ export default function Photobooth() {
     for (let i = photos.length; i < TAKE_COUNT; i += 1) {
       await runCountdown(delaySec);
 
-      const { sx, sy, sw, sh } = getCoverCrop(video, SLOT_ASPECT);
+      const targetAspect = getPreviewAspect();
+      const { sx, sy, sw, sh } = getCoverCrop(video, targetAspect);
       canvas.width = Math.round(sw);
       canvas.height = Math.round(sh);
 
@@ -273,7 +283,8 @@ export default function Photobooth() {
     setIsTaking(true);
     await runCountdown(delaySec);
 
-    const { sx, sy, sw, sh } = getCoverCrop(video, SLOT_ASPECT);
+    const targetAspect = getPreviewAspect();
+    const { sx, sy, sw, sh } = getCoverCrop(video, targetAspect);
     canvas.width = Math.round(sw);
     canvas.height = Math.round(sh);
 
@@ -487,6 +498,7 @@ export default function Photobooth() {
                   permission={permission}
                   countdown={countdown}
                   aspectRatio={SLOT_ASPECT}
+                  containerRef={previewContainerRef}
                 />
                 <PhotoGrid photos={photos} onSelect={setPreviewIndex} />
               </>
