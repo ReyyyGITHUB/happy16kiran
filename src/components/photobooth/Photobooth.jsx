@@ -6,15 +6,16 @@ import FrameSelector from "./FrameSelector";
 import { Upload } from "lucide-react";
 
 const TAKE_COUNT = 3;
-const FRAME_WIDTH = 1080;
+const FRAME_WIDTH = 720;
 const FRAME_HEIGHT = 1920;
 const PHOTO_AREA_HEIGHT = 1700;
 const SLOT_GAP = 20;
-const SLOT_PADDING_X = 90;
 const SLOT_PADDING_TOP = 100;
-const SLOT_WIDTH = FRAME_WIDTH - SLOT_PADDING_X * 2;
-const SLOT_HEIGHT = (PHOTO_AREA_HEIGHT - SLOT_PADDING_TOP - SLOT_GAP * 2) / 3;
-const SLOT_ASPECT = SLOT_WIDTH / SLOT_HEIGHT;
+const SLOT_SIZE = (PHOTO_AREA_HEIGHT - SLOT_PADDING_TOP - SLOT_GAP * 2) / 3;
+const SLOT_WIDTH = SLOT_SIZE;
+const SLOT_HEIGHT = SLOT_SIZE;
+const SLOT_PADDING_X = (FRAME_WIDTH - SLOT_WIDTH) / 2;
+const SLOT_ASPECT = 1;
 const FRAME_OPTIONS = [
   {
     id: "blush",
