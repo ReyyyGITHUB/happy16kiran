@@ -58,12 +58,24 @@ export default function FrameSelector({
               ].join(" ")}
             >
               <div
-                className="h-16 w-full rounded-xl"
+                className="h-16 w-full overflow-hidden rounded-xl"
                 style={{
-                  background: frame.preview,
                   border: `3px solid ${frame.border}`,
                 }}
-              />
+              >
+                {frame.previewType === "image" ? (
+                  <img
+                    src={frame.preview}
+                    alt={frame.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="h-full w-full"
+                    style={{ background: frame.preview }}
+                  />
+                )}
+              </div>
               <p className="mt-2 text-xs font-semibold text-pink-600">
                 {frame.name}
               </p>

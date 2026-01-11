@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Menu, X } from "lucide-react";
 import NavbarBrand from "./NavbarBrand";
 import NavbarLinks from "./NavbarLinks";
 import NavbarCta from "./NavbarCta";
@@ -7,6 +8,7 @@ import NavbarMobileLinks from "./NavbarMobileLinks";
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export default function Navbar() {
     e.preventDefault();
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    setMobileOpen(false);
   };
 
   return (
@@ -55,11 +58,21 @@ export default function Navbar() {
             <div className="flex items-center justify-between">
               <NavbarBrand />
               <NavbarLinks onScrollTo={scrollToId} />
-              <NavbarCta onScrollTo={scrollToId} />
+              <div className="hidden sm:flex">
+                <NavbarCta onScrollTo={scrollToId} />
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileOpen((prev) => !prev)}
+                className="inline-flex items-center justify-center rounded-xl border border-subtle bg-white/70 p-2 text-textPrimary transition sm:hidden"
+                aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              >
+                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
             </div>
 
             {/* Mobile quick links */}
-            <NavbarMobileLinks onScrollTo={scrollToId} />
+            {mobileOpen && <NavbarMobileLinks onScrollTo={scrollToId} />}
           </nav>
         </div>
       </div>

@@ -17,7 +17,7 @@ export default function AboutHeader() {
       </div>
       <Link
         to="/story"
-        className="h-fit rounded-md border border-subtle bg-white px-4 py-2 text-caption text-textPrimary"
+        className="h-fit rounded-md border border-subtle bg-white px-4 py-2 text-caption text-textPrimary text-center"
       >
         More Detail
       </Link>

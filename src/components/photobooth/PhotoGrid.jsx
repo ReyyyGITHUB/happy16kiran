@@ -4,7 +4,7 @@ export default function PhotoGrid({ photos, onSelect }) {
   if (!photos.length) return null;
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {photos.map((src, i) => (
         <button
           key={`shot-${i}`}
@@ -16,7 +16,7 @@ export default function PhotoGrid({ photos, onSelect }) {
           <img
             src={src}
             alt={`shot-${i + 1}`}
-            className="aspect-[3/4] w-full object-cover"
+            className="aspect-[4/3] w-full object-cover"
           />
         </button>
       ))}

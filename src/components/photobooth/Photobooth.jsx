@@ -3,56 +3,49 @@ import CameraPreview from "./CameraPreview";
 import PhotoboothControls from "./PhotoboothControls";
 import PhotoGrid from "./PhotoGrid";
 import FrameSelector from "./FrameSelector";
-import { Upload } from "lucide-react";
+import { drawCover } from "../../utils/crop";
+import { renderStrip } from "../../renderer/strip";
 
-const TAKE_COUNT = 3;
-const FRAME_WIDTH = 720;
-const FRAME_HEIGHT = 1920;
-const PHOTO_AREA_HEIGHT = 1700;
-const SLOT_GAP = 20;
-const SLOT_PADDING_TOP = 100;
-const SLOT_SIZE = (PHOTO_AREA_HEIGHT - SLOT_PADDING_TOP - SLOT_GAP * 2) / 3;
-const SLOT_WIDTH = SLOT_SIZE;
-const SLOT_HEIGHT = SLOT_SIZE;
-const SLOT_PADDING_X = (FRAME_WIDTH - SLOT_WIDTH) / 2;
-const SLOT_ASPECT = 1;
+const FRAME_WIDTH = 1080;
+const FRAME_HEIGHT = 3300;
+const FRAME_BG_SOURCES = {
+  hirono: "/assets/strip/cutnew-hirono-photostrip-1080x3300.png?v=1",
+  greentheme: "/assets/strip/greentheme-photostrip-1080x3300.png?v=1",
+};
+const SLOTS = [
+  { x: 80, y: 290, w: 920, h: 675 },
+  { x: 80, y: 985, w: 920, h: 675 },
+  { x: 80, y: 1680, w: 920, h: 675 },
+  { x: 80, y: 2375, w: 920, h: 675 },
+];
+const TAKE_COUNT = SLOTS.length;
+const PREVIEW_SIZE = { w: SLOTS[0].w, h: SLOTS[0].h };
 const FRAME_OPTIONS = [
   {
-    id: "blush",
-    name: "Blush",
-    label: "Soft pink",
-    border: "#f472b6",
-    preview: "linear-gradient(135deg,#fff1f6,#ffe4ef)",
+    id: "hirono",
+    name: "Hirono",
+    label: "Character strip",
+    border: "#111111",
+    preview: FRAME_BG_SOURCES.hirono,
+    previewType: "image",
   },
   {
-    id: "film",
-    name: "Film",
-    label: "Classic strip",
-    border: "#111827",
-    preview: "linear-gradient(135deg,#0f172a,#111827)",
-  },
-  {
-    id: "mint",
-    name: "Mint",
-    label: "Fresh teal",
-    border: "#14b8a6",
-    preview: "linear-gradient(135deg,#ecfeff,#ccfbf1)",
-  },
-  {
-    id: "sunset",
-    name: "Sunset",
-    label: "Warm glow",
-    border: "#fb923c",
-    preview: "linear-gradient(135deg,#ffedd5,#fecdd3)",
+    id: "greentheme",
+    name: "GreenTheme",
+    label: "Fresh green",
+    border: "#16a34a",
+    preview: FRAME_BG_SOURCES.greentheme,
+    previewType: "image",
   },
 ];
 
 export default function Photobooth() {
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const captureCanvasRef = useRef(null);
+  const previewCanvasRef = useRef(null);
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
-  const previewContainerRef = useRef(null);
+  const previewRafRef = useRef(null);
 
   const [permission, setPermission] = useState("unknown"); // unknown | granted | denied
   const [error, setError] = useState("");
@@ -62,7 +55,7 @@ export default function Photobooth() {
   const [countdown, setCountdown] = useState(null);
   const [previewIndex, setPreviewIndex] = useState(null);
   const [stage, setStage] = useState("capture"); // capture | frame
-  const [selectedFrameId, setSelectedFrameId] = useState("blush");
+  const [selectedFrameId, setSelectedFrameId] = useState("hirono");
   const [framedPhoto, setFramedPhoto] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
 
@@ -77,52 +70,14 @@ export default function Photobooth() {
   const cropToSlot = async (src) => {
     const img = await loadImage(src);
     const canvas = document.createElement("canvas");
-    canvas.width = SLOT_WIDTH;
-    canvas.height = SLOT_HEIGHT;
+    canvas.width = PREVIEW_SIZE.w;
+    canvas.height = PREVIEW_SIZE.h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return src;
-
-    const imgRatio = img.width / img.height;
-    const boxRatio = SLOT_ASPECT;
-    let drawW = SLOT_WIDTH;
-    let drawH = SLOT_HEIGHT;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    if (imgRatio > boxRatio) {
-      drawH = SLOT_HEIGHT;
-      drawW = SLOT_HEIGHT * imgRatio;
-      offsetX = (SLOT_WIDTH - drawW) / 2;
-    } else {
-      drawW = SLOT_WIDTH;
-      drawH = SLOT_WIDTH / imgRatio;
-      offsetY = (SLOT_HEIGHT - drawH) / 2;
-    }
-
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, SLOT_WIDTH, SLOT_HEIGHT);
-    ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+    ctx.fillRect(0, 0, PREVIEW_SIZE.w, PREVIEW_SIZE.h);
+    drawCover(ctx, img, 0, 0, PREVIEW_SIZE.w, PREVIEW_SIZE.h);
     return canvas.toDataURL("image/jpeg", 0.92);
-  };
-
-  const getCoverCrop = (video, targetAspect) => {
-    const srcW = video.videoWidth || 1280;
-    const srcH = video.videoHeight || 720;
-    const srcAspect = srcW / srcH;
-    let sx = 0;
-    let sy = 0;
-    let sw = srcW;
-    let sh = srcH;
-
-    if (srcAspect > targetAspect) {
-      sw = srcH * targetAspect;
-      sx = (srcW - sw) / 2;
-    } else {
-      sh = srcW / targetAspect;
-      sy = (srcH - sh) / 2;
-    }
-
-    return { sx, sy, sw, sh };
   };
 
   const stopStream = useCallback(() => {
@@ -204,17 +159,43 @@ export default function Photobooth() {
     setStage("capture");
   };
 
-  const getPreviewAspect = () => {
-    const container = previewContainerRef.current;
-    if (!container) return SLOT_ASPECT;
-    const { width, height } = container.getBoundingClientRect();
-    if (!width || !height) return SLOT_ASPECT;
-    return width / height;
-  };
+  const drawPreview = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = previewCanvasRef.current;
+    if (!video || !canvas || permission !== "granted") return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || PREVIEW_SIZE.w;
+    const cssH = canvas.clientHeight || PREVIEW_SIZE.h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    if (canvas.width !== cssW * dpr || canvas.height !== cssH * dpr) {
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    ctx.save();
+    ctx.scale(-1, 1);
+    drawCover(ctx, video, -cssW, 0, cssW, cssH);
+    ctx.restore();
+
+    previewRafRef.current = requestAnimationFrame(drawPreview);
+  }, [permission]);
+
+  useEffect(() => {
+    cancelAnimationFrame(previewRafRef.current);
+    if (permission === "granted") {
+      previewRafRef.current = requestAnimationFrame(drawPreview);
+    }
+    return () => cancelAnimationFrame(previewRafRef.current);
+  }, [drawPreview, permission]);
 
   const takePhoto = async () => {
     const video = videoRef.current;
-    const canvas = canvasRef.current;
+    const canvas = captureCanvasRef.current;
     if (!video || !canvas) return;
 
     setIsTaking(true);
@@ -231,27 +212,14 @@ export default function Photobooth() {
     for (let i = photos.length; i < TAKE_COUNT; i += 1) {
       await runCountdown(delaySec);
 
-      const targetAspect = getPreviewAspect();
-      const { sx, sy, sw, sh } = getCoverCrop(video, targetAspect);
-      canvas.width = Math.round(sw);
-      canvas.height = Math.round(sh);
+      canvas.width = PREVIEW_SIZE.w;
+      canvas.height = PREVIEW_SIZE.h;
 
       const ctx = canvas.getContext("2d");
       if (!ctx) break;
       ctx.save();
-      // Un-mirror captured photo
       ctx.scale(-1, 1);
-      ctx.drawImage(
-        video,
-        sx,
-        sy,
-        sw,
-        sh,
-        -canvas.width,
-        0,
-        canvas.width,
-        canvas.height
-      );
+      drawCover(ctx, video, -PREVIEW_SIZE.w, 0, PREVIEW_SIZE.w, PREVIEW_SIZE.h);
       ctx.restore();
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
 
@@ -269,7 +237,7 @@ export default function Photobooth() {
 
   const retakeSingle = async (index) => {
     const video = videoRef.current;
-    const canvas = canvasRef.current;
+    const canvas = captureCanvasRef.current;
     if (!video || !canvas) return;
 
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -284,26 +252,14 @@ export default function Photobooth() {
     setIsTaking(true);
     await runCountdown(delaySec);
 
-    const targetAspect = getPreviewAspect();
-    const { sx, sy, sw, sh } = getCoverCrop(video, targetAspect);
-    canvas.width = Math.round(sw);
-    canvas.height = Math.round(sh);
+    canvas.width = PREVIEW_SIZE.w;
+    canvas.height = PREVIEW_SIZE.h;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.save();
     ctx.scale(-1, 1);
-    ctx.drawImage(
-      video,
-      sx,
-      sy,
-      sw,
-      sh,
-      -canvas.width,
-      0,
-      canvas.width,
-      canvas.height
-    );
+    drawCover(ctx, video, -PREVIEW_SIZE.w, 0, PREVIEW_SIZE.w, PREVIEW_SIZE.h);
     ctx.restore();
     const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
 
@@ -326,97 +282,21 @@ export default function Photobooth() {
     setCountdown(null);
     setPreviewIndex(null);
     setStage("capture");
-    setSelectedFrameId("blush");
+    setSelectedFrameId("hirono");
     setFramedPhoto("");
     setSaveStatus("");
   }, [stopStream]);
 
   const buildFramedImage = useCallback(async (photoList, frameId) => {
-    const frame = FRAME_OPTIONS.find((item) => item.id === frameId);
-    if (!frame || photoList.length < TAKE_COUNT) return "";
-
-    const images = await Promise.all(photoList.map((src) => loadImage(src)));
-
-    const canvas = document.createElement("canvas");
-    const width = FRAME_WIDTH;
-    const height = FRAME_HEIGHT;
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return "";
-
-    const drawCover = (img, x, y, w, h) => {
-      const imgRatio = img.width / img.height;
-      const boxRatio = w / h;
-      let drawW = w;
-      let drawH = h;
-      let offsetX = 0;
-      let offsetY = 0;
-
-      if (imgRatio > boxRatio) {
-        drawH = h;
-        drawW = h * imgRatio;
-        offsetX = (w - drawW) / 2;
-      } else {
-        drawW = w;
-        drawH = w / imgRatio;
-        offsetY = (h - drawH) / 2;
-      }
-
-      ctx.drawImage(img, x + offsetX, y + offsetY, drawW, drawH);
-    };
-
-    if (frame.id === "film") {
-      ctx.fillStyle = "#0b0b0b";
-      ctx.fillRect(0, 0, width, height);
-    } else if (frame.id === "sunset") {
-      const grad = ctx.createLinearGradient(0, 0, width, height);
-      grad.addColorStop(0, "#ffedd5");
-      grad.addColorStop(1, "#fecdd3");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
-    } else if (frame.id === "mint") {
-      ctx.fillStyle = "#ecfeff";
-      ctx.fillRect(0, 0, width, height);
-    } else {
-      ctx.fillStyle = "#fff1f6";
-      ctx.fillRect(0, 0, width, height);
-    }
-
-    const photoAreaHeight = PHOTO_AREA_HEIGHT;
-    const footerHeight = height - photoAreaHeight;
-    const gap = SLOT_GAP;
-    const slotWidth = SLOT_WIDTH;
-    const slotHeight = SLOT_HEIGHT;
-
-    images.forEach((img, idx) => {
-      const x = SLOT_PADDING_X;
-      const y = SLOT_PADDING_TOP + idx * (slotHeight + gap);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(x, y, slotWidth, slotHeight);
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(x, y, slotWidth, slotHeight);
-      ctx.clip();
-      drawCover(img, x, y, slotWidth, slotHeight);
-      ctx.restore();
+    if (photoList.length < TAKE_COUNT) return "";
+    const overlaySrc = FRAME_BG_SOURCES[frameId] || FRAME_BG_SOURCES.hirono;
+    return renderStrip({
+      slots: SLOTS,
+      photos: photoList,
+      overlaySrc,
+      width: FRAME_WIDTH,
+      height: FRAME_HEIGHT,
     });
-
-    if (frame.id === "film") {
-      ctx.fillStyle = "#111827";
-      ctx.fillRect(0, photoAreaHeight, width, footerHeight);
-      ctx.fillStyle = "#1f2937";
-      for (let y = 70; y < height - 120; y += 120) {
-        ctx.fillRect(16, y, 20, 60);
-        ctx.fillRect(width - 36, y, 20, 60);
-      }
-    }
-
-    ctx.strokeStyle = frame.border;
-    ctx.lineWidth = 24;
-    ctx.strokeRect(12, 12, width - 24, height - 24);
-
-    return canvas.toDataURL("image/png");
   }, []);
 
   useEffect(() => {
@@ -467,39 +347,15 @@ export default function Photobooth() {
           </h2>
         </div>
 
-        <div className="mt-10 flex w-full flex-col gap-6 lg:grid lg:grid-cols-[220px_1fr_320px] lg:items-start">
-          <div className="order-4 rounded-3xl border border-pink-100 bg-[#ffeaf2] p-5 text-center text-sm text-pink-600 shadow-sm lg:order-none">
-            <p className="font-semibold">Tips</p>
-            <p className="mt-2 text-pink-500">
-              Cari cahaya yang terang agar hasil foto lebih jelas.
-            </p>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="border-pink-500 border flex flex-row gap-2 bg- w-full justify-center items-center p-4 rounded-full mt-4"
-            >
-              <Upload size={18}/>
-              Unggah foto
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleUploadPhotos}
-            />
-          </div>
-
+        <div className="mt-10 flex w-full flex-col gap-6 lg:grid lg:grid-cols-[1fr_320px] lg:items-start">
           <div className="order-1 flex flex-col gap-6 lg:order-none">
             {stage === "capture" ? (
               <>
                 <CameraPreview
                   videoRef={videoRef}
+                  canvasRef={previewCanvasRef}
                   permission={permission}
                   countdown={countdown}
-                  aspectRatio={SLOT_ASPECT}
-                  containerRef={previewContainerRef}
                 />
                 <PhotoGrid photos={photos} onSelect={setPreviewIndex} />
               </>
@@ -527,9 +383,12 @@ export default function Photobooth() {
                 delaySec={delaySec}
                 isTaking={isTaking}
                 stage={stage}
+                uploadInputRef={fileInputRef}
                 onRequestCamera={requestCamera}
                 onSelectDelay={setDelaySec}
                 onTakePhoto={takePhoto}
+                onUploadClick={() => fileInputRef.current?.click()}
+                onUploadChange={handleUploadPhotos}
                 onProceed={() => setStage("frame")}
                 onReset={resetAll}
               />
@@ -605,7 +464,7 @@ export default function Photobooth() {
           </div>
         )}
 
-        <canvas ref={canvasRef} className="hidden" />
+        <canvas ref={captureCanvasRef} className="hidden" />
       </div>
     </section>
   );

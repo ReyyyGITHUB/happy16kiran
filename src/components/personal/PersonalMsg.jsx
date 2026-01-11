@@ -6,8 +6,8 @@ import PersonalMsgText from "./PersonalMsgText";
 export default function PersonalMsg() {
   return (
     <div className="w-full bg-[#fafafa]">
-      <div className="mx-auto flex w-full max-w-250 flex-col items-center py-10 text-center sm:px-10 md:px-16 sm:text-left">
-        <div className="w-full rounded-3xl">
+      <div className="mx-auto flex w-full max-w-250 flex-col items-center py-10 text-center sm:px-10 md:px-1 sm:text-left">
+        <div className="w-full rounded-3xl px-4">
           <PersonalMsgText />
           <PersonalMsgDivider />
           <PersonalMsgSignature />

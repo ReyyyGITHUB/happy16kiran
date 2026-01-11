@@ -1,4 +1,4 @@
-import { CameraIcon, CameraOffIcon } from "lucide-react";
+import { CameraIcon, CameraOffIcon, Upload } from "lucide-react";
 import React from "react";
 
 export default function PhotoboothControls({
@@ -9,9 +9,12 @@ export default function PhotoboothControls({
   delaySec,
   isTaking,
   stage,
+  uploadInputRef,
   onRequestCamera,
   onSelectDelay,
   onTakePhoto,
+  onUploadClick,
+  onUploadChange,
   onProceed,
   onReset,
 }) {
@@ -94,6 +97,22 @@ export default function PhotoboothControls({
             ? "Siap-siap..."
             : `Ambil Foto (${photosCount}/${maxPhotos})`}
         </button>
+        <button
+          type="button"
+          onClick={onUploadClick}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-pink-200 bg-white px-4 py-3 text-base font-semibold text-pink-600 transition hover:bg-pink-50"
+        >
+          <Upload size={18} />
+          Unggah foto
+        </button>
+        <input
+          ref={uploadInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={onUploadChange}
+        />
         {stage === "capture" && photosCount >= maxPhotos && (
           <button
             type="button"
