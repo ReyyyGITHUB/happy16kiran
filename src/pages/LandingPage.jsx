@@ -27,10 +27,10 @@ export default function LandingPage() {
       <div className="mt-8 sm:mt-12 md:mt-16">
         <About />
       </div>
-      <div className="pb-8">
+      <div id="gallery" className="pb-8">
         <Gallery />
       </div>
-      <div className="pb-8">
+      <div id="photobooth" className="pb-8">
         <Photobooth />
       </div>
     </main>
