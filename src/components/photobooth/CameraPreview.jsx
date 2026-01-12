@@ -25,8 +25,10 @@ export default function CameraPreview({
         </div>
       )}
       {permission === "granted" && countdown && (
-        <div className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-pink-500 text-base font-bold text-white shadow-md">
-          {countdown}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-pink-500/20 text-2xl font-bold text-white shadow-lg">
+            {countdown}
+          </div>
         </div>
       )}
     </div>

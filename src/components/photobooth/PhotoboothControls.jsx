@@ -45,7 +45,7 @@ export default function PhotoboothControls({
       <div className="mt-6 flex flex-col gap-3">
         {permission !== "granted" && (
           <div className="rounded-2xl border border-pink-100 flex flex-col bg-[#ffeaf2] p-4">
-            <p className="text-caption text-pink-600 ">
+            <p className="text-pink-600/60 ">
               Klik tombol di bawah untuk mengizinkan akses kamera.
             </p>
             <button

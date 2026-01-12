@@ -12,7 +12,7 @@ export default function HeroTitleText() {
         {/* Pink chip (sedikit rotate) */}
         <span className="inline-flex items-center bg-pink text-white px-3 py-1 md:px-4 md:py-2 -rotate-2 shadow-sm">
           <span className="text-[clamp(32px,7vw,60px)] font-heading font-extrabold tracking-tight">
-            16 YO Kirann!
+            16 Yo, Kirann!
           </span>
         </span>
       </div>

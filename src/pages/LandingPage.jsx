@@ -5,8 +5,8 @@ import DivHero from "../components/divider-hero/DivHero";
 import PersonalMsg from "../components/personal/PersonalMsg";
 import About from "../components/about/About";
 import Gallery from "../components/gallery/Gallery";
-import ForYour16 from "@/components/for-your-16/ForYour16";
 import Photobooth from "../components/photobooth/Photobooth";
+import WishIn16 from "@/components/wish-in-16/WishIn16";
 
 export default function LandingPage() {
   return (
@@ -32,9 +32,6 @@ export default function LandingPage() {
       </div>
       <div className="pb-8">
         <Photobooth />
-      </div>
-      <div className="">
-        <ForYour16 />
       </div>
     </main>
   );
