@@ -9,11 +9,10 @@ export default function AboutMedia() {
         <div className="absolute inset-0 translate-x-1 translate-y-2 rotate-[-0.5deg] origin-bottom-left rounded-3xl bg-bgSurface/20 ring-1 ring-border-subtle/30" />
         <div className="relative overflow-hidden rounded-3xl bg-bgSurface ring-1 ring-border-subtle shadow-sm origin-bottom-left transform-gpu will-change-transform sm:-rotate-[1.5deg] md:-rotate-2">
           <video
-            className="aspect-video w-full object-cover"
+            className="w-full h-auto"
             controls
-            poster="/assets/placeholder-video.jpg"
           >
-            <source src="/assets/about/about-video.mp4" type="video/mp4" />
+            <source src="/assets/video/vid-about.mp4" type="video/mp4" />
           </video>
           <span className="pointer-events-none absolute -top-4 left-4 -rotate-3 text-xs text-textMuted opacity-70">
             we didn’t plan this

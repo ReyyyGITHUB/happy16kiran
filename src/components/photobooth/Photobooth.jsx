@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import Cropper from "react-easy-crop";
 import CameraPreview from "./CameraPreview";
 import PhotoboothControls from "./PhotoboothControls";
 import PhotoGrid from "./PhotoGrid";
@@ -11,6 +12,8 @@ const FRAME_HEIGHT = 3300;
 const FRAME_BG_SOURCES = {
   hirono: "/assets/strip/cutnew-hirono-photostrip-1080x3300.png?v=1",
   greentheme: "/assets/strip/greentheme-photostrip-1080x3300.png?v=1",
+  retrocut: "/assets/strip/retrocut-photostrip-1080x3300.png?v=1",
+  pinkwhitecut: "/assets/strip/pinkwhitecut-photostrip-1080x3300.png?v=1",
 };
 const SLOTS = [
   { x: 80, y: 290, w: 920, h: 675 },
@@ -37,6 +40,22 @@ const FRAME_OPTIONS = [
     preview: FRAME_BG_SOURCES.greentheme,
     previewType: "image",
   },
+  {
+    id: "retrocut",
+    name: "Retro",
+    label: "Classic film",
+    border: "#111827",
+    preview: FRAME_BG_SOURCES.retrocut,
+    previewType: "image",
+  },
+  {
+    id: "pinkwhitecut",
+    name: "PinkWhite",
+    label: "Soft blush",
+    border: "#f472b6",
+    preview: FRAME_BG_SOURCES.pinkwhitecut,
+    previewType: "image",
+  },
 ];
 
 export default function Photobooth() {
@@ -58,6 +77,12 @@ export default function Photobooth() {
   const [selectedFrameId, setSelectedFrameId] = useState("hirono");
   const [framedPhoto, setFramedPhoto] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
+  const [cropSrc, setCropSrc] = useState("");
+  const [cropQueue, setCropQueue] = useState([]);
+  const [cropIndex, setCropIndex] = useState(0);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedPixels, setCroppedPixels] = useState(null);
 
   const loadImage = (src) =>
     new Promise((resolve, reject) => {
@@ -67,17 +92,59 @@ export default function Photobooth() {
       img.src = src;
     });
 
-  const cropToSlot = async (src) => {
+  const getCroppedImage = async (src, cropPixels) => {
     const img = await loadImage(src);
     const canvas = document.createElement("canvas");
     canvas.width = PREVIEW_SIZE.w;
     canvas.height = PREVIEW_SIZE.h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return src;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, PREVIEW_SIZE.w, PREVIEW_SIZE.h);
-    drawCover(ctx, img, 0, 0, PREVIEW_SIZE.w, PREVIEW_SIZE.h);
+    ctx.drawImage(
+      img,
+      cropPixels.x,
+      cropPixels.y,
+      cropPixels.width,
+      cropPixels.height,
+      0,
+      0,
+      PREVIEW_SIZE.w,
+      PREVIEW_SIZE.h
+    );
     return canvas.toDataURL("image/jpeg", 0.92);
+  };
+
+  const openCropQueue = (sources) => {
+    if (!sources.length) return;
+    setCropQueue(sources);
+    setCropIndex(0);
+    setCropSrc(sources[0]);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedPixels(null);
+  };
+
+  const closeCropModal = () => {
+    setCropQueue([]);
+    setCropIndex(0);
+    setCropSrc("");
+    setCroppedPixels(null);
+  };
+
+  const handleCropConfirm = async () => {
+    if (!cropSrc || !croppedPixels) return;
+    const cropped = await getCroppedImage(cropSrc, croppedPixels);
+    setPhotos((prev) => [...prev, cropped].slice(0, TAKE_COUNT));
+
+    const nextIndex = cropIndex + 1;
+    if (nextIndex < cropQueue.length) {
+      setCropIndex(nextIndex);
+      setCropSrc(cropQueue[nextIndex]);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedPixels(null);
+    } else {
+      closeCropModal();
+    }
   };
 
   const stopStream = useCallback(() => {
@@ -150,11 +217,7 @@ export default function Photobooth() {
       )
     );
 
-    const processed = await Promise.all(
-      dataUrls.map((src) => cropToSlot(src))
-    );
-
-    setPhotos((prev) => [...prev, ...processed].slice(0, TAKE_COUNT));
+    openCropQueue(dataUrls);
     setPreviewIndex(null);
     setStage("capture");
   };
@@ -466,6 +529,60 @@ export default function Photobooth() {
 
         <canvas ref={captureCanvasRef} className="hidden" />
       </div>
+
+      {cropSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-[520px] rounded-3xl bg-white p-5 shadow-xl">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-pink-600">
+                Crop foto {cropIndex + 1}
+              </p>
+              <button
+                type="button"
+                onClick={closeCropModal}
+                className="rounded-full border border-pink-100 px-3 py-1 text-xs text-pink-600"
+              >
+                Batal
+              </button>
+            </div>
+            <div className="relative mt-4 h-[360px] overflow-hidden rounded-2xl bg-[#fff6fa]">
+              <Cropper
+                image={cropSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={PREVIEW_SIZE.w / PREVIEW_SIZE.h}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={(_, pixels) => setCroppedPixels(pixels)}
+                objectFit="cover"
+              />
+            </div>
+            <div className="mt-4">
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.05}
+                value={zoom}
+                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                className="w-full accent-pink-500"
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleCropConfirm}
+                className="rounded-xl bg-pink-500 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Gunakan foto
+              </button>
+              <span className="text-xs text-pink-400">
+                {cropIndex + 1} / {cropQueue.length}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
